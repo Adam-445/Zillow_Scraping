@@ -7,21 +7,27 @@ import time
 
 CONFIG = {
     # Zillow
-    "zillow_url" : "https://appbrewery.github.io/Zillow-Clone/"
+    "zillow_url": "https://appbrewery.github.io/Zillow-Clone/",
+    # Google
+    "google_forms": "https://forms.gle/C8bBpunhsvXes7zy9",
 
 }
 SELECTORS = {
     # Zillow
-    "all_listings" : "ul.List-c11n-8-84-3-photo-cards li",
+    "all_listings": "ul.List-c11n-8-84-3-photo-cards li",
     "listing_link": ".StyledPropertyCardDataArea-anchor",
     "listing_price": ".PropertyCardWrapper__StyledPriceLine",
     "listing_address": "address",
+    # Google
+
 }
+
+
 class ZillowScrapingBot:
     def __init__(self):
         self.zillow_response = requests.get(url=CONFIG["zillow_url"])
         self.soup = BeautifulSoup(self.zillow_response.text, "html.parser")
-        # self.driver = webdriver.Chrome(options=self.get_chrome_options())
+        self.driver = webdriver.Chrome(options=self.get_chrome_options())
 
     def get_listings_info(self):
         """
@@ -43,7 +49,7 @@ class ZillowScrapingBot:
                 if link_tag:
                     link = link_tag['href']
                 else:
-                    #TODO: Fix some listings not being returned
+                    # TODO: Fix some listings not being returned
                     print(f"Failed to get link for:\n{listing.prettify()}")
                     continue
                 # Extract price
@@ -65,8 +71,17 @@ class ZillowScrapingBot:
 
         print(listings_properties)
 
+    def add_listings(self):
+        """
+        Adds scraped listings to Google Sheets using Google forms
+        """
+        # Get the listings
+        listings_data = self.get_listings_info()
 
-    def get_chrome_options(self, detach:bool = True) -> Options:
+        # Visit the google form
+        self.driver.get(url=CONFIG["google_forms"])
+
+    def get_chrome_options(self, detach: bool = True) -> Options:
         """
         Creates and configures Chrome options for the selenium webdriver.
 
@@ -82,6 +97,7 @@ class ZillowScrapingBot:
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
         )
         return chrome_options
+
 
 listings_bot = ZillowScrapingBot()
 listings_bot.get_listings_info()
