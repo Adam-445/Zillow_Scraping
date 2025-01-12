@@ -35,7 +35,6 @@ class ZillowScrapingBot:
 
         # Find all the listings
         listings = self.soup.select(SELECTORS["all_listings"])
-
         # Get the info from each listing
         for index, listing in enumerate(listings):
             try:
@@ -44,6 +43,8 @@ class ZillowScrapingBot:
                 if link_tag:
                     link = link_tag['href']
                 else:
+                    #TODO: Fix some listings not being returned
+                    print(f"Failed to get link for:\n{listing.prettify()}")
                     continue
                 # Extract price
                 price_tag = listing.select_one(SELECTORS["listing_price"])
