@@ -19,6 +19,10 @@ SELECTORS = {
     "listing_price": ".PropertyCardWrapper__StyledPriceLine",
     "listing_address": "address",
     # Google
+    "link_input" : "div.o3Dpx > div:nth-child(1) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "price_input" : "div.o3Dpx > div:nth-child(2) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "address_input" : "div.o3Dpx > div:nth-child(3) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "submit_button" : "div.DE3NNc.CekdCb > div.lRwqcd > div"
 
 }
 
@@ -27,9 +31,9 @@ class ZillowScrapingBot:
     def __init__(self):
         self.zillow_response = requests.get(url=CONFIG["zillow_url"])
         self.soup = BeautifulSoup(self.zillow_response.text, "html.parser")
-        self.driver = webdriver.Chrome(options=self.get_chrome_options())
+        self.driver = webdriver.Chrome(options=self.get_chrome_options(False))
 
-    def get_listings_info(self):
+    def get_listings_info(self) -> dict:
         """
         Returns the link, price, and address for each listing on the page
 
@@ -54,7 +58,7 @@ class ZillowScrapingBot:
                     continue
                 # Extract price
                 price_tag = listing.select_one(SELECTORS["listing_price"])
-                price = price_tag.text.strip() if price_tag else "No price"
+                price = price_tag.text.split("/")[0].split("+")[0] if price_tag else "No price"
 
                 # Extract address
                 address_tag = listing.select_one(SELECTORS["listing_address"])
@@ -70,6 +74,7 @@ class ZillowScrapingBot:
                 print(f"Error processing listing {index}: {e}")
 
         print(listings_properties)
+        return listings_properties
 
     def add_listings(self):
         """
@@ -78,8 +83,25 @@ class ZillowScrapingBot:
         # Get the listings
         listings_data = self.get_listings_info()
 
-        # Visit the google form
-        self.driver.get(url=CONFIG["google_forms"])
+        for listing in listings_data.values():
+            print(listing)
+            # Visit the Google form
+            self.driver.get(url=CONFIG["google_forms"])
+            time.sleep(1)
+
+            # Fill in the information
+            link_input = self.driver.find_element(By.CSS_SELECTOR, SELECTORS["link_input"])
+            link_input.send_keys(listing["link"])
+            price_input = self.driver.find_element(By.CSS_SELECTOR, SELECTORS["price_input"])
+            price_input.send_keys(listing["price"])
+            address_input = self.driver.find_element(By.CSS_SELECTOR, SELECTORS["address_input"])
+            address_input.send_keys(listing["address"])
+
+            # Press the submit button
+            submit_button = self.driver.find_element(By.CSS_SELECTOR, SELECTORS["submit_button"])
+            submit_button.click()
+            time.sleep(1)
+
 
     def get_chrome_options(self, detach: bool = True) -> Options:
         """
@@ -101,3 +123,4 @@ class ZillowScrapingBot:
 
 listings_bot = ZillowScrapingBot()
 listings_bot.get_listings_info()
+listings_bot.add_listings()
