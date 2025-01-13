@@ -19,18 +19,22 @@ SELECTORS = {
     "listing_price": ".PropertyCardWrapper__StyledPriceLine",
     "listing_address": "address",
     # Google
-    "link_input" : "div.o3Dpx > div:nth-child(1) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
-    "price_input" : "div.o3Dpx > div:nth-child(2) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
-    "address_input" : "div.o3Dpx > div:nth-child(3) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
-    "submit_button" : "div.DE3NNc.CekdCb > div.lRwqcd > div"
+    "link_input": "div.o3Dpx > div:nth-child(1) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "price_input": "div.o3Dpx > div:nth-child(2) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "address_input": "div.o3Dpx > div:nth-child(3) > div > div > div.AgroKb > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input",
+    "submit_button": "div.DE3NNc.CekdCb > div.lRwqcd > div"
 
+}
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+    "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8"
 }
 
 
 class ZillowScrapingBot:
     def __init__(self):
-        self.zillow_response = requests.get(url=CONFIG["zillow_url"])
-        self.soup = BeautifulSoup(self.zillow_response.text, "html.parser")
+        self.zillow_response = requests.get(url=CONFIG["zillow_url"], headers=HEADER)
+        self.soup = BeautifulSoup(self.zillow_response.text, "lxml")
         self.driver = webdriver.Chrome(options=self.get_chrome_options(False))
 
     def get_listings_info(self) -> dict:
@@ -53,8 +57,6 @@ class ZillowScrapingBot:
                 if link_tag:
                     link = link_tag['href']
                 else:
-                    # TODO: Fix some listings not being returned
-                    print(f"Failed to get link for:\n{listing.prettify()}")
                     continue
                 # Extract price
                 price_tag = listing.select_one(SELECTORS["listing_price"])
@@ -73,7 +75,6 @@ class ZillowScrapingBot:
             except Exception as e:
                 print(f"Error processing listing {index}: {e}")
 
-        print(listings_properties)
         return listings_properties
 
     def add_listings(self):
@@ -84,7 +85,6 @@ class ZillowScrapingBot:
         listings_data = self.get_listings_info()
 
         for listing in listings_data.values():
-            print(listing)
             # Visit the Google form
             self.driver.get(url=CONFIG["google_forms"])
             time.sleep(1)
@@ -102,7 +102,6 @@ class ZillowScrapingBot:
             submit_button.click()
             time.sleep(1)
 
-
     def get_chrome_options(self, detach: bool = True) -> Options:
         """
         Creates and configures Chrome options for the selenium webdriver.
@@ -116,11 +115,12 @@ class ZillowScrapingBot:
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_experimental_option("detach", detach)
         chrome_options.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+            f"user-agent={HEADER["User-Agent"]}"
         )
         return chrome_options
 
 
-listings_bot = ZillowScrapingBot()
-listings_bot.get_listings_info()
-listings_bot.add_listings()
+if __name__ == "__main__":
+    listings_bot = ZillowScrapingBot()
+    listings_bot.get_listings_info()
+    listings_bot.add_listings()
